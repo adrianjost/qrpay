@@ -195,6 +195,10 @@
 		opacity: 0.7;
 		vertical-align: top;
 	}
+	table td {
+		text-align: left;
+		width: 100%;
+	}
 	/* switch table to one column layout on small screens */
 	@media (max-width: 400px) {
 		table,
