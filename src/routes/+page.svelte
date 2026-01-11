@@ -59,7 +59,7 @@
 
 		if (!qr) {
 			qr = new QRCodeStyling({
-				type: 'svg',
+				type: 'canvas',
 				data,
 				dotsOptions: { color: '#000', type: 'rounded' },
 				cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
@@ -115,7 +115,13 @@
 			</InputField>
 
 			<InputField label="Purpose">
-				<input type="text" placeholder="e.g. Lunch" name="purpose" bind:value={$purpose} maxlength="140" />
+				<input
+					type="text"
+					placeholder="e.g. Lunch"
+					name="purpose"
+					bind:value={$purpose}
+					maxlength="140"
+				/>
 			</InputField>
 		</div>
 
