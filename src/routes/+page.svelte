@@ -64,7 +64,10 @@
 				dotsOptions: { color: '#000', type: 'rounded' },
 				cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
 				cornersDotOptions: { type: 'extra-rounded', color: '#000' },
-				backgroundOptions: { color: '#fff' }
+				backgroundOptions: { color: '#fff' },
+				qrOptions: {
+					errorCorrectionLevel: 'M'
+				}
 			});
 
 			// render into container
