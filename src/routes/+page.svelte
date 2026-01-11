@@ -109,7 +109,7 @@
 					step="0.01"
 					min="0"
 					max="10000"
-					inputmode="numeric"
+					inputmode="decimal"
 				/>
 			</InputField>
 
