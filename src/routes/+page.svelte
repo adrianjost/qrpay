@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { dataFields } from '$lib/storage';
+	import { dataFields, setupCompleted } from '$lib/storage';
 	import type QRCodeStyling from 'qr-code-styling';
 	let { amountInEuro, purpose, owner, iban, bic } = dataFields;
 	import { onMount, onDestroy } from 'svelte';
@@ -81,9 +81,7 @@
 	const unsubscribers: Array<() => void> = [];
 
 	onMount(() => {
-		const ownerValue = get(owner);
-		const ibanValue = get(iban);
-		if (!ownerValue || !ibanValue) {
+		if (!get(setupCompleted)) {
 			goto('/setup');
 			return;
 		}

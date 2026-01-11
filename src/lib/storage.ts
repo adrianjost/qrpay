@@ -41,6 +41,12 @@ export const dataFields = {
 	owner: persistedState('owner', ''),
 	iban: persistedState('iban', ''),
 	bic: persistedState('bic', ''),
-	amountInEuro: persistedState('amountInEuro', 0),
+	amountInEuro: persistedState('amountInEuro', 0.0),
 	purpose: persistedState('purpose', '')
 };
+
+import { derived } from 'svelte/store';
+export const setupCompleted = derived(
+	[dataFields.owner, dataFields.iban],
+	([$owner, $iban]) => $owner !== '' && $iban !== ''
+);
