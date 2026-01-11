@@ -3,6 +3,7 @@
 	import type QRCodeStyling from 'qr-code-styling';
 	let { amountInEuro, purpose, owner, iban, bic } = dataFields;
 	import { onMount, onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { get } from 'svelte/store';
 	import InputField from '$lib/InputField.svelte';
 
@@ -80,6 +81,13 @@
 	const unsubscribers: Array<() => void> = [];
 
 	onMount(() => {
+		const ownerValue = get(owner);
+		const ibanValue = get(iban);
+		if (!ownerValue || !ibanValue) {
+			goto('/setup');
+			return;
+		}
+
 		createOrUpdateQr();
 
 		// Subscribe to all fields in dataFields and update QR automatically
