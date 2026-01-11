@@ -10,22 +10,22 @@
 	<meta name="description" content="Setup your account" />
 </svelte:head>
 
-<form class="layout-inputs">
+<form class="layout-inputs" on:submit|preventDefault={() => goto('/')}>
 	<header>
 		<h1>Setup</h1>
 		<p>All data is only saved in your browser's local storage.</p>
 	</header>
 	<InputField label="Account Owner">
-		<input type="text" name="owner" bind:value={$owner} required />
+		<input type="text" name="owner" bind:value={$owner} required placeholder="e.g. John Doe" />
 	</InputField>
 	<InputField label="IBAN">
-		<input type="text" name="iban" bind:value={$iban} required />
+		<input type="text" name="iban" bind:value={$iban} required placeholder="e.g. DE02120300000000202051" />
 	</InputField>
-	<InputField label="BIC">
-		<input type="text" name="bic" bind:value={$bic} />
+	<InputField label="BIC (optional)">
+		<input type="text" name="bic" bind:value={$bic} placeholder="e.g. BYLADEM1001"/>
 	</InputField>
 
-	<button type="button" class="paper-btn" on:click={() => goto('/')} disabled={!setupCompleted}>
+	<button type="submit" class="paper-btn" disabled={!setupCompleted}>
 		Done
 	</button>
 </form>
