@@ -106,6 +106,7 @@
 					type="number"
 					name="amountInEuro"
 					bind:value={$amountInEuro}
+					placeholder="e.g. 0,00"
 					step="0.01"
 					min="0"
 					max="10000"
@@ -114,7 +115,7 @@
 			</InputField>
 
 			<InputField label="Purpose">
-				<input type="text" name="purpose" bind:value={$purpose} maxlength="140" />
+				<input type="text" placeholder="e.g. Lunch" name="purpose" bind:value={$purpose} maxlength="140" />
 			</InputField>
 		</div>
 
