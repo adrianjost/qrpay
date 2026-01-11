@@ -120,6 +120,7 @@
 					min="0"
 					max="10000"
 					inputmode="decimal"
+					autofocus 
 				/>
 			</InputField>
 
