@@ -60,7 +60,7 @@
 
 		if (!qr) {
 			qr = new QRCodeStyling({
-				type: 'canvas',
+				type: 'svg',
 				data,
 				dotsOptions: { color: '#000', type: 'rounded' },
 				cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
