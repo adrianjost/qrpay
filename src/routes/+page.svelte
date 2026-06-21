@@ -113,6 +113,7 @@
 		const purposeValue = get(purpose)?.trim();
 		const ibanValue = get(iban)?.replace(/\s+/g, '').trim();
 		const formattedIban = ibanValue ? ibanValue.replace(/(.{4})/g, '$1 ').trim() : '';
+		const shareScale = 3;
 
 		const paymentLines = [
 			`Amount: ${amountValue.toFixed(2)} EUR`,
@@ -127,9 +128,11 @@
 		}
 
 		const padding = 16;
+		const qrPadding = 16;
 		const headerLineHeight = 20;
 		const bodyLineHeight = 18;
-		const maxTextWidth = Math.max(qrImage.width - padding * 2, 120);
+		const contentWidth = qrImage.width + qrPadding * 2;
+		const maxTextWidth = Math.max(contentWidth - padding * 2, 120);
 
 		measureContext.font = '13px system-ui, -apple-system, Segoe UI, sans-serif';
 		const wrappedLines: string[] = [];
@@ -157,20 +160,21 @@
 		const textSectionHeight =
 			padding + headerLineHeight + wrappedLines.length * bodyLineHeight + padding;
 		const canvas = document.createElement('canvas');
-		canvas.width = qrImage.width;
-		canvas.height = qrImage.height + textSectionHeight;
+		canvas.width = contentWidth * shareScale;
+		canvas.height = (qrImage.height + qrPadding * 2 + textSectionHeight) * shareScale;
 
 		const context = canvas.getContext('2d');
 		if (context === null) {
 			throw new Error('Failed to create image context');
 		}
+		context.scale(shareScale, shareScale);
 
 		// Compose share image with QR and human-readable payment details below.
 		context.fillStyle = '#fff';
-		context.fillRect(0, 0, canvas.width, canvas.height);
-		context.drawImage(qrImage, 0, 0);
+		context.fillRect(0, 0, contentWidth, qrImage.height + qrPadding * 2 + textSectionHeight);
+		context.drawImage(qrImage, qrPadding, qrPadding);
 
-		let y = qrImage.height + padding;
+		let y = qrImage.height + qrPadding * 2 + padding;
 		context.fillStyle = '#111';
 		context.font = '600 14px system-ui, -apple-system, Segoe UI, sans-serif';
 		context.fillText('Payment details', padding, y);
