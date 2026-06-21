@@ -10,8 +10,10 @@
 
 	let qr: QRCodeStyling | null = null;
 	let qrContainer: HTMLDivElement | null = null;
+	let canExportImage = false;
 	let canShare = false;
 
+	$: canExportImage = browser && qr !== null;
 	$: canShare =
 		browser &&
 		typeof navigator !== 'undefined' &&
@@ -166,7 +168,7 @@
 		// Compose share image with QR and human-readable payment details below.
 		context.fillStyle = '#fff';
 		context.fillRect(0, 0, canvas.width, canvas.height);
-		context.drawImage(qrPNG, 0, 0);
+		context.drawImage(qrImage, 0, 0);
 
 		let y = qrImage.height + padding;
 		context.fillStyle = '#111';
@@ -212,15 +214,31 @@
 		return parts.join('\n');
 	}
 
+	function downloadImage(file: File) {
+		const objectUrl = URL.createObjectURL(file);
+		const link = document.createElement('a');
+		link.href = objectUrl;
+		link.download = file.name;
+		link.rel = 'noopener';
+		link.click();
+		URL.revokeObjectURL(objectUrl);
+	}
+
 	async function share() {
-		if (!canShare) {
+		if (!canExportImage) {
 			return;
 		}
 
 		const file = await createShareImage();
 
+		if (!canShare) {
+			downloadImage(file);
+			return;
+		}
+
 		if (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [file] })) {
-			throw new Error('Sharing files is not supported on this device');
+			downloadImage(file);
+			return;
 		}
 
 		await navigator.share({
@@ -316,9 +334,9 @@
 			</tbody>
 		</table>
 
-		{#if canShare}
+		{#if canExportImage}
 			<button type="button" on:click={share} class="paper-btn" disabled={!$setupCompleted}>
-				Share
+				{canShare ? 'Share' : 'Download'}
 			</button>
 		{/if}
 	</div>
