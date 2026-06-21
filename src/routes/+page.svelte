@@ -5,10 +5,18 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { get } from 'svelte/store';
+	import { browser } from '$app/environment';
 	import InputField from '$lib/InputField.svelte';
 
 	let qr: QRCodeStyling | null = null;
 	let qrContainer: HTMLDivElement | null = null;
+	let canShare = false;
+
+	$: canShare =
+		browser &&
+		typeof navigator !== 'undefined' &&
+		typeof navigator.share === 'function' &&
+		qr !== null;
 
 	function buildPayload(): string | null {
 		// Build EPC-QR (EPC069-12) 12-line payload.
@@ -78,6 +86,56 @@
 		}
 	}
 
+	async function createShareImage() {
+		if (qr === null) {
+			throw new Error('QR code not initialized');
+		}
+
+		const qrPNG = await qr.getRawData('png');
+		if (!(qrPNG instanceof Blob)) {
+			throw new Error('Failed to create PNG share image');
+		}
+
+		return new File([qrPNG], 'epc-qr-payment.png', { type: 'image/png' });
+	}
+
+	function buildShareText() {
+		const amount = Number(get(amountInEuro) || 0);
+		const paymentPurpose = get(purpose)?.trim();
+		const accountOwner = get(owner)?.trim();
+		const accountIban = get(iban)?.trim();
+		const accountBic = get(bic)?.trim();
+
+		const parts = [
+			`Hi! Please send ${amount.toFixed(2)} EUR${paymentPurpose ? ` for ${paymentPurpose}` : ''}.`,
+			'You can scan the attached Payment QR code with your banking app for your convenience.',
+			accountOwner ? `Account owner: ${accountOwner}` : '',
+			accountIban ? `IBAN: ${accountIban}` : '',
+			accountBic ? `BIC: ${accountBic}` : '',
+			'Thank you!'
+		].filter(Boolean);
+
+		return parts.join('\n');
+	}
+
+	async function share() {
+		if (!canShare) {
+			return;
+		}
+
+		const file = await createShareImage();
+
+		if (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [file] })) {
+			throw new Error('Sharing files is not supported on this device');
+		}
+
+		await navigator.share({
+			files: [file],
+			title: 'EPC-QR Payment',
+			text: buildShareText()
+		});
+	}
+
 	const unsubscribers: Array<() => void> = [];
 
 	onMount(() => {
@@ -120,7 +178,7 @@
 					min="0"
 					max="10000"
 					inputmode="decimal"
-					autofocus 
+					autofocus
 				/>
 			</InputField>
 
@@ -163,6 +221,12 @@
 				</tr>
 			</tbody>
 		</table>
+
+		{#if canShare}
+			<button type="button" on:click={share} class="paper-btn" disabled={!$setupCompleted}>
+				Share
+			</button>
+		{/if}
 	</div>
 </section>
 
