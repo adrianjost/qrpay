@@ -96,7 +96,101 @@
 			throw new Error('Failed to create PNG share image');
 		}
 
-		return new File([qrPNG], 'epc-qr-payment.png', { type: 'image/png' });
+		const loadImage = (src: string) =>
+			new Promise<HTMLImageElement>((resolve, reject) => {
+				const image = new Image();
+				image.onload = () => resolve(image);
+				image.onerror = () => reject(new Error('Failed to load QR image'));
+				image.src = src;
+			});
+
+		const objectUrl = URL.createObjectURL(qrPNG);
+		const qrImage = await loadImage(objectUrl).finally(() => URL.revokeObjectURL(objectUrl));
+
+		const amountValue = Number(get(amountInEuro) || 0);
+		const purposeValue = get(purpose)?.trim();
+		const ibanValue = get(iban)?.replace(/\s+/g, '').trim();
+		const formattedIban = ibanValue ? ibanValue.replace(/(.{4})/g, '$1 ').trim() : '';
+
+		const paymentLines = [
+			`Amount: ${amountValue.toFixed(2)} EUR`,
+			purposeValue ? `Purpose: ${purposeValue}` : 'Purpose: -',
+			formattedIban ? `IBAN: ${formattedIban}` : 'IBAN: -'
+		];
+
+		const measureCanvas = document.createElement('canvas');
+		const measureContext = measureCanvas.getContext('2d');
+		if (measureContext === null) {
+			throw new Error('Failed to create image context');
+		}
+
+		const padding = 16;
+		const headerLineHeight = 20;
+		const bodyLineHeight = 18;
+		const maxTextWidth = Math.max(qrImage.width - padding * 2, 120);
+
+		measureContext.font = '13px system-ui, -apple-system, Segoe UI, sans-serif';
+		const wrappedLines: string[] = [];
+		for (const line of paymentLines) {
+			const words = line.split(' ');
+			let currentLine = '';
+
+			for (const word of words) {
+				const candidate = currentLine ? `${currentLine} ${word}` : word;
+				if (measureContext.measureText(candidate).width <= maxTextWidth) {
+					currentLine = candidate;
+				} else {
+					if (currentLine) {
+						wrappedLines.push(currentLine);
+					}
+					currentLine = word;
+				}
+			}
+
+			if (currentLine) {
+				wrappedLines.push(currentLine);
+			}
+		}
+
+		const textSectionHeight =
+			padding + headerLineHeight + wrappedLines.length * bodyLineHeight + padding;
+		const canvas = document.createElement('canvas');
+		canvas.width = qrImage.width;
+		canvas.height = qrImage.height + textSectionHeight;
+
+		const context = canvas.getContext('2d');
+		if (context === null) {
+			throw new Error('Failed to create image context');
+		}
+
+		// Compose share image with QR and human-readable payment details below.
+		context.fillStyle = '#fff';
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		context.drawImage(qrPNG, 0, 0);
+
+		let y = qrImage.height + padding;
+		context.fillStyle = '#111';
+		context.font = '600 14px system-ui, -apple-system, Segoe UI, sans-serif';
+		context.fillText('Payment details', padding, y);
+		y += headerLineHeight;
+
+		context.font = '13px system-ui, -apple-system, Segoe UI, sans-serif';
+		for (const line of wrappedLines) {
+			context.fillText(line, padding, y);
+			y += bodyLineHeight;
+		}
+
+		const composedImageBlob = await new Promise<Blob>((resolve, reject) => {
+			canvas.toBlob((blob) => {
+				if (blob) {
+					resolve(blob);
+					return;
+				}
+				reject(new Error('Failed to export share image'));
+			}, 'image/png');
+		});
+
+		return new File([composedImageBlob], 'epc-qr-payment.png', { type: 'image/png' });
 	}
 
 	function buildShareText() {
