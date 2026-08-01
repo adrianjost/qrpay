@@ -89,11 +89,26 @@
 	}
 
 	async function createShareImage() {
-		if (qr === null) {
+		// Always build a fresh QR instance with the current payload to avoid stale
+		// data from qr-code-styling's internally-async update() / _setupSvg().
+		const payload = buildPayload();
+		if (payload === null) {
 			throw new Error('QR code not initialized');
 		}
 
-		const qrPNG = await qr.getRawData('png');
+		const module = await import('qr-code-styling');
+		const QRCodeStylingExport = module.default || module;
+		const shareQr = new QRCodeStylingExport({
+			type: 'svg',
+			data: payload,
+			dotsOptions: { color: '#000', type: 'rounded' },
+			cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
+			cornersDotOptions: { type: 'extra-rounded', color: '#000' },
+			backgroundOptions: { color: '#fff' },
+			qrOptions: { errorCorrectionLevel: 'M' }
+		});
+
+		const qrPNG = await shareQr.getRawData('png');
 		if (!(qrPNG instanceof Blob)) {
 			throw new Error('Failed to create PNG share image');
 		}
