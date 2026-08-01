@@ -1,10 +1,11 @@
 <script lang="ts">
-	export let label: string;
+	import type { Snippet } from 'svelte';
+	let { label, children }: { label: string; children: Snippet } = $props();
 </script>
 
 <label class="input-field">
 	<span class="label-text">{label}</span>
-	<slot />
+	{@render children()}
 </label>
 
 <style>
