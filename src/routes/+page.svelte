@@ -55,11 +55,22 @@
 		return lines.join('\n');
 	}
 
-	async function createOrUpdateQr() {
-		if (!qrContainer) return;
-
+	async function makeQrInstance(data: string) {
 		const module = await import('qr-code-styling');
 		const QRCodeStyling = module.default || module;
+		return new QRCodeStyling({
+			type: 'svg',
+			data,
+			dotsOptions: { color: '#000', type: 'rounded' },
+			cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
+			cornersDotOptions: { type: 'extra-rounded', color: '#000' },
+			backgroundOptions: { color: '#fff' },
+			qrOptions: { errorCorrectionLevel: 'M' }
+		});
+	}
+
+	async function createOrUpdateQr() {
+		if (!qrContainer) return;
 
 		const data = buildPayload();
 		if (data === null) {
@@ -69,19 +80,7 @@
 		}
 
 		if (!qr) {
-			qr = new QRCodeStyling({
-				type: 'svg',
-				data,
-				dotsOptions: { color: '#000', type: 'rounded' },
-				cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
-				cornersDotOptions: { type: 'extra-rounded', color: '#000' },
-				backgroundOptions: { color: '#fff' },
-				qrOptions: {
-					errorCorrectionLevel: 'M'
-				}
-			});
-
-			// render into container
+			qr = await makeQrInstance(data);
 			qr.append(qrContainer);
 		} else {
 			qr.update({ data });
@@ -96,19 +95,7 @@
 			throw new Error('QR code not initialized');
 		}
 
-		const module = await import('qr-code-styling');
-		const QRCodeStylingExport = module.default || module;
-		const shareQr = new QRCodeStylingExport({
-			type: 'svg',
-			data: payload,
-			dotsOptions: { color: '#000', type: 'rounded' },
-			cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
-			cornersDotOptions: { type: 'extra-rounded', color: '#000' },
-			backgroundOptions: { color: '#fff' },
-			qrOptions: { errorCorrectionLevel: 'M' }
-		});
-
-		const qrPNG = await shareQr.getRawData('png');
+		const qrPNG = await (await makeQrInstance(payload)).getRawData('png');
 		if (!(qrPNG instanceof Blob)) {
 			throw new Error('Failed to create PNG share image');
 		}
