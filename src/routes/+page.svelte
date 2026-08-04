@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { dataFields, setupCompleted } from '$lib/storage';
+	import { buildEpcPayload } from '$lib/epc';
 	import type QRCodeStyling from 'qr-code-styling';
 	let { amountInEuro, purpose, owner, iban, bic } = dataFields;
 	import { onMount, onDestroy } from 'svelte';
@@ -8,51 +9,25 @@
 	import { browser } from '$app/environment';
 	import InputField from '$lib/InputField.svelte';
 
-	let qr: QRCodeStyling | null = null;
-	let qrContainer: HTMLDivElement | null = null;
-	let canExportImage = false;
-	let canShare = false;
+	let qr: QRCodeStyling | null = $state(null);
+	let qrContainer: HTMLDivElement | null = $state(null);
 
-	$: canExportImage = browser && qr !== null;
-	$: canShare =
+	const canExportImage = $derived(browser && qr !== null);
+	const canShare = $derived(
 		browser &&
-		typeof navigator !== 'undefined' &&
-		typeof navigator.share === 'function' &&
-		qr !== null;
+			typeof navigator !== 'undefined' &&
+			typeof navigator.share === 'function' &&
+			qr !== null
+	);
 
-	function buildPayload(): string | null {
-		// Build EPC-QR (EPC069-12) 12-line payload.
-		// Lines (1..12): Service Tag, Version, Charset, Identification, BIC, Name,
-		// IBAN, Amount, Purpose, Remittance (structured), Remittance (text), Info
-
-		// Join with LF. Important: last line (12) must NOT end with a newline.
-		const lines = [
-			// 1: Service Tag (fixed)
-			'BCD',
-			// 2: Version - use 002 (only EWR) per user's table
-			'002',
-			// 3: Character set - 1 = UTF-8
-			'1',
-			// 4: Identification - per EPC-QR most implementations expect 'SCT'.
-			'SCT',
-			// 5: BIC - optional for version 002; include if provided
-			get(bic),
-			// 6: Name (max 70)
-			get(owner),
-			// 7: IBAN
-			get(iban).replace(/\s+/g, ''),
-			// 8: Amount - optional, format EUR123.45 (use dot)
-			`EUR${(get(amountInEuro) || 0).toString()}`,
-			// 9: Purpose - leave empty
-			'',
-			// 10: Remittance (structured)
-			'',
-			// 11: Remittance (text)
-			get(purpose),
-			''
-		];
-
-		return lines.join('\n');
+	function buildPayload(): string {
+		return buildEpcPayload({
+			bic: get(bic),
+			owner: get(owner),
+			iban: get(iban),
+			amountInEuro: get(amountInEuro),
+			purpose: get(purpose)
+		});
 	}
 
 	async function makeQrInstance(data: string) {
@@ -73,11 +48,6 @@
 		if (!qrContainer) return;
 
 		const data = buildPayload();
-		if (data === null) {
-			qr = null;
-			qrContainer.innerHTML = '';
-			return;
-		}
 
 		if (!qr) {
 			qr = await makeQrInstance(data);
@@ -230,28 +200,37 @@
 		URL.revokeObjectURL(objectUrl);
 	}
 
+	let shareError: string | null = $state(null);
+
 	async function share() {
 		if (!canExportImage) {
 			return;
 		}
 
-		const file = await createShareImage();
+		shareError = null;
+		try {
+			const file = await createShareImage();
 
-		if (!canShare) {
-			downloadImage(file);
-			return;
+			if (!canShare) {
+				downloadImage(file);
+				return;
+			}
+
+			if (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [file] })) {
+				downloadImage(file);
+				return;
+			}
+
+			await navigator.share({
+				files: [file],
+				title: 'EPC-QR Payment',
+				text: buildShareText()
+			});
+		} catch (err) {
+			// Ignore user-cancelled share (AbortError)
+			if (err instanceof Error && err.name === 'AbortError') return;
+			shareError = err instanceof Error ? err.message : 'Failed to share or download image.';
 		}
-
-		if (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [file] })) {
-			downloadImage(file);
-			return;
-		}
-
-		await navigator.share({
-			files: [file],
-			title: 'EPC-QR Payment',
-			text: buildShareText()
-		});
 	}
 
 	const unsubscribers: Array<() => void> = [];
@@ -341,9 +320,12 @@
 		</table>
 
 		{#if canExportImage}
-			<button type="button" on:click={share} class="paper-btn" disabled={!$setupCompleted}>
+			<button type="button" onclick={share} class="paper-btn" disabled={!$setupCompleted}>
 				{canShare ? 'Share' : 'Download'}
 			</button>
+			{#if shareError}
+				<p class="share-error" role="alert">{shareError}</p>
+			{/if}
 		{/if}
 	</div>
 </section>
@@ -416,5 +398,11 @@
 			padding: 0;
 			margin-bottom: 0.25em;
 		}
+	}
+	.share-error {
+		color: #c00;
+		font-size: var(--font-size-small);
+		margin: 0;
+		text-align: center;
 	}
 </style>

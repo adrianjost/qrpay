@@ -2,7 +2,12 @@
 	import { goto } from '$app/navigation';
 	import InputField from '$lib/InputField.svelte';
 	import { dataFields, setupCompleted } from '$lib/storage';
+	import { validateIban, validateBic } from '$lib/epc';
 	let { owner, iban, bic } = dataFields;
+
+	const ibanError = $derived(validateIban($iban));
+	const bicError = $derived(validateBic($bic));
+	const formValid = $derived($setupCompleted && ibanError === null && bicError === null);
 </script>
 
 <svelte:head>
@@ -10,7 +15,13 @@
 	<meta name="description" content="Setup your account" />
 </svelte:head>
 
-<form class="layout-inputs" on:submit|preventDefault={() => goto('/')}>
+<form
+	class="layout-inputs"
+	onsubmit={(e) => {
+		e.preventDefault();
+		goto('/');
+	}}
+>
 	<header>
 		<h1>Setup</h1>
 		<p>All data is only saved in your browser's local storage.</p>
@@ -19,15 +30,21 @@
 		<input type="text" name="owner" bind:value={$owner} required placeholder="e.g. John Doe" />
 	</InputField>
 	<InputField label="IBAN">
-		<input type="text" name="iban" bind:value={$iban} required placeholder="e.g. DE02120300000000202051" />
+		<input
+			type="text"
+			name="iban"
+			bind:value={$iban}
+			required
+			placeholder="e.g. DE02120300000000202051"
+		/>
+		{#if ibanError}<p class="field-error" role="alert">{ibanError}</p>{/if}
 	</InputField>
 	<InputField label="BIC (optional)">
-		<input type="text" name="bic" bind:value={$bic} placeholder="e.g. BYLADEM1001"/>
+		<input type="text" name="bic" bind:value={$bic} placeholder="e.g. BYLADEM1001" />
+		{#if bicError}<p class="field-error" role="alert">{bicError}</p>{/if}
 	</InputField>
 
-	<button type="submit" class="paper-btn" disabled={!setupCompleted}>
-		Done
-	</button>
+	<button type="submit" class="paper-btn" disabled={!formValid}> Done </button>
 </form>
 
 <style>
@@ -48,5 +65,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+	.field-error {
+		color: #c00;
+		font-size: 0.875rem;
+		margin: 0.25rem 0 0;
+		text-align: center;
 	}
 </style>
