@@ -1,0 +1,17 @@
+{
+  "name": "QR Pay",
+  "short_name": "QR Pay",
+  "description": "Generate SEPA payment QR codes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#565656",
+  "theme_color": "#565656",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
