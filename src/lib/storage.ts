@@ -38,11 +38,13 @@ export function persistedState<T>(key: string, initial: T) {
 }
 
 export const dataFields = {
+	// Account fields — persist across sessions
 	owner: persistedState('owner', ''),
 	iban: persistedState('iban', ''),
 	bic: persistedState('bic', ''),
-	amountInEuro: persistedState('amountInEuro', 0.0),
-	purpose: persistedState('purpose', '')
+	// Transaction fields — session-only, reset on page load
+	amountInEuro: writable<number>(0),
+	purpose: writable<string>('')
 };
 
 import { derived } from 'svelte/store';

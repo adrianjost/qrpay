@@ -11,7 +11,7 @@
 			<a
 				href="/"
 				title="Request a payment"
-				class="paper-btn{ page.url.pathname === '/' ? ' disabled' : '' }"
+				class="paper-btn{page.url.pathname === '/' ? ' disabled' : ''}"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +29,7 @@
 		{#if $setupCompleted}
 			<a
 				href="/setup"
-				class="paper-btn{ page.url.pathname === '/setup' ? ' disabled' : '' }"
+				class="paper-btn{page.url.pathname === '/setup' ? ' disabled' : ''}"
 				title="Setup account"
 			>
 				<svg
